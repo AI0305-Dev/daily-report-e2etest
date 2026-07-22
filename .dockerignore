@@ -1,0 +1,11 @@
+.git
+.github
+.next
+.husky
+node_modules
+e2e
+*.md
+.env*
+Makefile
+playwright-report
+test-results

@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SALES
+  MANAGER
+}
+
+enum ReportStatus {
+  DRAFT
+  SUBMITTED
+  REJECTED
+  COMPLETED
+}
+
+enum CommentTargetField {
+  PROBLEM
+  PLAN
+  GENERAL
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  password     String
+  role         Role
+  isAdmin      Boolean  @default(false)
+  managerId    String?
+  isDeleted    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastUpdateId String
+
+  manager      User?         @relation("UserManages", fields: [managerId], references: [id])
+  subordinates User[]        @relation("UserManages")
+  dailyReports DailyReport[]
+  comments     Comment[]
+
+  @@map("users")
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  name         String
+  address      String?
+  note         String?  @db.Text
+  isDeleted    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastUpdateId String
+
+  visitRecords VisitRecord[]
+
+  @@map("customers")
+}
+
+model DailyReport {
+  id           String       @id @default(cuid())
+  userId       String
+  date         DateTime     @db.Date
+  problem      String?      @db.Text
+  plan         String?      @db.Text
+  status       ReportStatus @default(DRAFT)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  lastUpdateId String
+
+  user         User          @relation(fields: [userId], references: [id])
+  visitRecords VisitRecord[]
+  comments     Comment[]
+
+  @@unique([userId, date])
+  @@map("daily_reports")
+}
+
+model VisitRecord {
+  id           String   @id @default(cuid())
+  reportId     String
+  customerId   String
+  content      String   @db.Text
+  sortOrder    Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastUpdateId String
+
+  report   DailyReport @relation(fields: [reportId], references: [id])
+  customer Customer    @relation(fields: [customerId], references: [id])
+
+  @@map("visit_records")
+}
+
+model Comment {
+  id           String             @id @default(cuid())
+  reportId     String
+  authorId     String
+  targetField  CommentTargetField
+  body         String             @db.Text
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  lastUpdateId String
+
+  report DailyReport @relation(fields: [reportId], references: [id])
+  author User        @relation(fields: [authorId], references: [id])
+
+  @@map("comments")
+}
